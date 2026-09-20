@@ -1,0 +1,15 @@
+{
+  "name": "anfars-simulated-nodes",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Simulated UoK LAN service nodes for Automatic Network Failure and Recovery System",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "start:dev": "node index.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5"
+  }
+}

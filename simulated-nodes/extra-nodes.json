@@ -1,0 +1,9 @@
+[
+  {
+    "key": "libarry",
+    "name": "Libarry",
+    "port": 9409,
+    "role": "primary",
+    "standbyKey": null
+  }
+]
