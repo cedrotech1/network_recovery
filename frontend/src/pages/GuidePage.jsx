@@ -1,5 +1,7 @@
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { appPath } from '../utils/appPaths';
+import { nodesService } from '../services/api';
 
 function Section({ title, children }) {
   return (
@@ -9,6 +11,16 @@ function Section({ title, children }) {
     </section>
   );
 }
+
+/** Seed / lab-default service keys (ports 9401–9406). Anything else was added from Our services. */
+const DEFAULT_KEYS = new Set([
+  'web-primary',
+  'web-standby',
+  'app-primary',
+  'app-standby',
+  'api-service',
+  'portal-service',
+]);
 
 const SCENARIOS = [
   {
@@ -53,7 +65,37 @@ const SCENARIOS = [
   },
 ];
 
+function isDefaultService(node) {
+  return DEFAULT_KEYS.has(String(node.key || '').toLowerCase());
+}
+
 export default function GuidePage() {
+  const [nodes, setNodes] = useState([]);
+  const [loadingNodes, setLoadingNodes] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await nodesService.getAll({ heal: 0 });
+        if (!cancelled && res.success) {
+          const list = [...(res.data || [])].sort((a, b) => Number(a.port) - Number(b.port));
+          setNodes(list);
+        }
+      } catch {
+        if (!cancelled) setNodes([]);
+      } finally {
+        if (!cancelled) setLoadingNodes(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const defaults = nodes.filter(isDefaultService);
+  const added = nodes.filter((n) => !isDefaultService(n));
+
   return (
     <div className="space-y-4 max-w-4xl">
       <div>
@@ -75,25 +117,94 @@ export default function GuidePage() {
         </p>
       </Section>
 
-      <Section title="2. What do we monitor? (important)">
+      <Section title="2. What do we monitor? (each service + port)">
         <p className="m-0">
-          We monitor <strong>internal university lab services</strong> (a small private network simulation),
-          <strong> not the whole internet</strong>, not MTN/Airtel, and not someone’s home Wi‑Fi.
+          We watch <strong>internal campus lab services</strong> on this PC — not the public internet.
+          The list below is live from <Link className="text-[#00628b] font-medium" to={appPath('nodes')}>Our services</Link>
+          (defaults plus anything you added manually).
         </p>
-        <ul className="m-0 pl-5 list-disc space-y-1">
-          <li><strong>University Website</strong> — the public campus website</li>
-          <li><strong>Campus App</strong> — internal staff application (+ a backup copy)</li>
-          <li><strong>Internal API Service</strong> — the “messenger” between systems</li>
-          <li><strong>Student Portal</strong> — where students check results / info</li>
-        </ul>
+
+        {loadingNodes ? (
+          <p className="m-0 text-gray-500">Loading services…</p>
+        ) : nodes.length === 0 ? (
+          <p className="m-0 text-gray-500">No services found yet. Run seed / open Our services.</p>
+        ) : (
+          <>
+            <p className="m-0 font-medium text-gray-900">Default lab services (seed)</p>
+            <div className="overflow-x-auto rounded-lg border border-gray-200">
+              <table className="min-w-full text-sm">
+                <thead className="bg-gray-50 text-left text-xs uppercase text-gray-500">
+                  <tr>
+                    <th className="px-3 py-2.5 font-medium">Service</th>
+                    <th className="px-3 py-2.5 font-medium">Role</th>
+                    <th className="px-3 py-2.5 font-medium">Host</th>
+                    <th className="px-3 py-2.5 font-medium">Port</th>
+                    <th className="px-3 py-2.5 font-medium">What it is</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {defaults.map((n) => (
+                    <tr key={n.id || n.key} className="border-t border-gray-100">
+                      <td className="px-3 py-2.5 font-medium text-gray-900">{n.name}</td>
+                      <td className="px-3 py-2.5 text-gray-600 capitalize">{n.role || '—'}</td>
+                      <td className="px-3 py-2.5 font-mono text-xs text-gray-700">{n.host || '127.0.0.1'}</td>
+                      <td className="px-3 py-2.5 font-mono font-semibold text-[#00628b]">{n.port}</td>
+                      <td className="px-3 py-2.5 text-gray-600">{n.description || '—'}</td>
+                    </tr>
+                  ))}
+                  {defaults.length === 0 ? (
+                    <tr>
+                      <td colSpan={5} className="px-3 py-3 text-gray-500">
+                        No default services in the database yet.
+                      </td>
+                    </tr>
+                  ) : null}
+                </tbody>
+              </table>
+            </div>
+
+            <p className="m-0 font-medium text-gray-900 pt-1">
+              Added from Our services ({added.length})
+            </p>
+            <div className="overflow-x-auto rounded-lg border border-gray-200">
+              <table className="min-w-full text-sm">
+                <thead className="bg-gray-50 text-left text-xs uppercase text-gray-500">
+                  <tr>
+                    <th className="px-3 py-2.5 font-medium">Service</th>
+                    <th className="px-3 py-2.5 font-medium">Role</th>
+                    <th className="px-3 py-2.5 font-medium">Host</th>
+                    <th className="px-3 py-2.5 font-medium">Port</th>
+                    <th className="px-3 py-2.5 font-medium">What it is</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {added.length === 0 ? (
+                    <tr>
+                      <td colSpan={5} className="px-3 py-3 text-gray-500">
+                        None yet. Use Our services → Add service to register another host + port.
+                      </td>
+                    </tr>
+                  ) : (
+                    added.map((n) => (
+                      <tr key={n.id || n.key} className="border-t border-gray-100">
+                        <td className="px-3 py-2.5 font-medium text-gray-900">{n.name}</td>
+                        <td className="px-3 py-2.5 text-gray-600 capitalize">{n.role || '—'}</td>
+                        <td className="px-3 py-2.5 font-mono text-xs text-gray-700">{n.host || '127.0.0.1'}</td>
+                        <td className="px-3 py-2.5 font-mono font-semibold text-[#00628b]">{n.port}</td>
+                        <td className="px-3 py-2.5 text-gray-600">{n.description || '—'}</td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </>
+        )}
+
         <p className="m-0">
-          By default these run on this computer as small test services (ports 9401–9406). That is our “LAN laboratory”.
-        </p>
-        <p className="m-0">
-          Admin / ICT Officer can also open <Link className="text-[#00628b] font-medium" to={appPath('nodes')}>Our services</Link> →
-          <strong> Add service</strong> and register another reachable host + port (with a <code>/health</code> endpoint).
-          The system will then monitor it the same way. Adding on the web registers monitoring only — the real service
-          process must already be running.
+          Admin / ICT can open <Link className="text-[#00628b] font-medium" to={appPath('nodes')}>Our services</Link> →
+          <strong> Add service</strong> to register another reachable host + port (with <code>/health</code>).
+          This guide refreshes that list whenever you open it.
         </p>
       </Section>
 

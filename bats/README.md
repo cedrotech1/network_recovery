@@ -38,9 +38,18 @@ Login: http://127.0.0.1:5473/login
 
 | File | Purpose |
 |------|---------|
-| `seed.bat` | Base users + nodes |
+| `setup-db.bat` | **First time / no DB:** create `network_recovery` DB + sync tables + seed Admin/ICT/Viewer + default services |
+| `setup-db.bat /demo` | Same as above, then add screenshot/demo history |
+| `seed.bat` | Base users + nodes (DB must already exist) |
 | `seed-demo.bat` | Screenshot demo history |
 | `test-health.bat` | Check API, UI, control, all nodes |
 | `test-s2-inject.bat` | Portal HTTP 500 auto-restart demo |
 | `test-s4-failover.bat` | Campus App failover demo |
 | `test-recover-portal.bat` | Manual portal recover |
+
+### Fresh PC (PostgreSQL installed, empty)
+
+1. Copy `backend\.env.example` → `backend\.env` and set `DEV_DATABASE_PASSWORD`
+2. Double-click `setup-db.bat`
+3. Double-click `start-all.bat`
+4. Login: `admin@uok.ac.rw` / `Admin@123`

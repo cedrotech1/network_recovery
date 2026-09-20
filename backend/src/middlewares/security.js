@@ -109,7 +109,7 @@ function corsMiddleware(req, res, next) {
 
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: parseInt(process.env.RATE_LIMIT_AUTH_MAX || '25', 10),
+  max: parseInt(process.env.RATE_LIMIT_AUTH_MAX || '500', 10),
   standardHeaders: true,
   legacyHeaders: false,
   message: { success: false, message: 'Too many attempts. Try again later.' },
@@ -117,8 +117,8 @@ const authLimiter = rateLimit({
 
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  // Campus NAT shares one IP — default must survive mass student intake
-  max: parseInt(process.env.RATE_LIMIT_API_MAX || '5000', 10),
+  // Lab UI polls often (dashboard + heal + charts). Allow heavy local demo traffic.
+  max: parseInt(process.env.RATE_LIMIT_API_MAX || '100000', 10),
   standardHeaders: true,
   legacyHeaders: false,
   message: { success: false, message: 'Too many requests. Try again later.' },
@@ -134,7 +134,12 @@ const apiLimiter = rateLimit({
       path.includes('/auth/refresh') ||
       path.includes('/auth/logout') ||
       path.includes('/student/me') ||
-      path.includes('/student/home')
+      path.includes('/student/home') ||
+      path.includes('/health') ||
+      path.includes('/dashboard') ||
+      path.includes('/nodes') ||
+      path.includes('/metrics') ||
+      path.includes('/monitor')
     );
   },
 });
